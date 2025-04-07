@@ -23,7 +23,7 @@ const Navbar = () => {
     { name: "Features", path: "/features" },
     { name: "Contact", path: "/contact" },
   ];
-
+  
   return (
     <motion.nav
       className="py-4 px-6 md:px-12 lg:px-24 sticky top-0 z-50 bg-background/80 backdrop-blur-md shadow-md border-b border-border"

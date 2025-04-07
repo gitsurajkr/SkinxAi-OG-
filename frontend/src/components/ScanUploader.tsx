@@ -166,7 +166,7 @@ const ScanUploader = ({ onImageSelect }: ScanUploaderProps) => {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent shimmer" />
             </motion.div>
             
-            <h3 className="text-xl font-semibold mb-2 font-heading">Upload a skin image</h3>
+            <h3 className="text-xl font-semibold mb-2 font-heading ">Upload a skin image</h3>
             <p className="text-gray-400 mb-8 text-center max-w-md">
               Drag and drop your image here, or choose one of the options below
             </p>
@@ -177,10 +177,10 @@ const ScanUploader = ({ onImageSelect }: ScanUploaderProps) => {
                 whileTap={{ scale: 0.95 }}
               >
                 <Button
-                  className="btn-gradient text-white px-6 py-5 h-auto"
+                  className="btn-gradient text-black px-6 py-5 h-auto"
                   onClick={openFileDialog}
                 >
-                  <Image className="mr-2 h-4 w-4" /> Browse Files
+                  <Image className="mr-2 h-4 w-4 text-black" /> Browse Files
                 </Button>
               </motion.div>
               

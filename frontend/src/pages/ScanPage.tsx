@@ -46,7 +46,7 @@ const ScanPage = () => {
         >
           <div className="fancy-border p-px rounded-xl mb-6">
             <div className="fancy-border-content p-6 rounded-[calc(var(--radius)-1px)]">
-              <h2 className="text-xl font-semibold mb-4 font-heading">Upload Your Skin Image</h2>
+              <h2 className="text-xl font-semibold mb-4 font-heading text-gradient">Upload Your Skin Image</h2>
               <ScanUploader onImageSelect={handleImageSelect} />
             </div>
           </div>
