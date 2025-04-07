@@ -1,0 +1,150 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 225 30% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 228 22% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 228 22% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 187 96% 41%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 266 83% 75%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 228 16% 18%;
+    --muted-foreground: 215 20% 75%;
+
+    --accent: 187 96% 85%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 228 16% 22%;
+    --input: 228 16% 22%;
+    --ring: 187 96% 41%;
+
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: 
+      radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.1) 1px, transparent 0),
+      linear-gradient(to right, rgba(6, 196, 203, 0.03), rgba(155, 135, 245, 0.03));
+    background-size: 30px 30px, 100% 100%;
+    background-position: 0 0, 0 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  .hero-gradient {
+    @apply bg-gradient-to-r from-skinx-teal via-skinx-teal-light to-skinx-purple-light;
+  }
+  
+  .btn-gradient {
+    @apply relative bg-gradient-to-r from-skinx-teal to-skinx-teal-light hover:from-skinx-teal-dark hover:to-skinx-teal transition-all duration-300 overflow-hidden;
+  }
+  
+  .btn-gradient::before {
+    @apply content-[''] absolute top-0 left-0 w-full h-full bg-white/20 transform -translate-x-full skew-x-12 transition-transform duration-700;
+  }
+  
+  .btn-gradient:hover::before {
+    @apply transform translate-x-full;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-2;
+  }
+  
+  .upload-area {
+    @apply border-2 border-dashed border-skinx-teal/50 rounded-xl p-8 text-center transition-all duration-300 hover:border-skinx-teal relative;
+  }
+  
+  .upload-area::before {
+    @apply content-[''] absolute -z-10 inset-0 bg-skinx-teal/5 rounded-xl opacity-0 transition-opacity duration-300;
+  }
+  
+  .upload-area:hover::before {
+    @apply opacity-100;
+  }
+  
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md border border-white/10 shadow-lg;
+  }
+  
+  .glow {
+    @apply relative;
+  }
+  
+  .glow::before {
+    @apply content-[''] absolute -z-10 inset-0 bg-gradient-to-r from-skinx-teal/20 to-skinx-purple/20 rounded-xl blur-xl opacity-70;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-skinx-teal-light to-skinx-purple-light bg-clip-text text-transparent;
+  }
+  
+  .bg-gradient-dark {
+    @apply bg-gradient-to-br from-[#1A1A2E] to-[#16213E];
+  }
+  
+  .bg-gradient-card {
+    @apply bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-md border border-white/10;
+  }
+  
+  .highlight-dot {
+    @apply absolute w-1 h-1 rounded-full bg-skinx-teal animate-pulse;
+  }
+  
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+  
+  .shimmer::before {
+    @apply content-[''] absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12;
+    animation: shimmer 2.5s infinite;
+  }
+  
+  @keyframes shimmer {
+    100% {
+      left: 150%;
+    }
+  }
+  
+  .fancy-border {
+    @apply relative border-none p-[1px] rounded-xl bg-gradient-to-r from-skinx-teal via-skinx-teal-light to-skinx-purple-light;
+  }
+  
+  .fancy-border-content {
+    @apply bg-card/95 rounded-[calc(var(--radius)-1px)] p-4 sm:p-5;
+  }
+  @layer utilities {
+    .glow-border {
+      box-shadow: 0 0 8px rgba(0, 200, 150, 0.2), 0 0 12px rgba(150, 100, 255, 0.15);
+    }
+  }
+  
+}
