@@ -42,7 +42,7 @@ const Hero = () => {
                   className="btn-gradient text-white text-lg py-6 px-8 rounded-full w-full sm:w-auto animate-pulse-glow"
                   asChild
                 >
-                  <Link to="/scan" className="flex items-center gap-2">
+                  <Link to="/scan" className="text-black flex items-center gap-2">
                     <Scan size={20} />
                     Start Scan
                   </Link>
