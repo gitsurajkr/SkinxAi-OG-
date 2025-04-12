@@ -15,6 +15,7 @@ const ScanUploader = ({ onImageSelect }: ScanUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const webcamRef = useRef<HTMLVideoElement>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -44,12 +45,13 @@ const ScanUploader = ({ onImageSelect }: ScanUploaderProps) => {
         setPreviewImage(reader.result as string);
       };
       reader.readAsDataURL(file);
-      onImageSelect(file);
+      setSelectedFile(file);
       toast.success("Image uploaded successfully");
     } else {
       toast.error("Please upload an image file");
     }
   };
+  
 
   const openFileDialog = () => {
     fileInputRef.current?.click();
@@ -269,7 +271,14 @@ const ScanUploader = ({ onImageSelect }: ScanUploaderProps) => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Button className="btn-gradient text-white px-6 py-2.5">
+                  <Button className="btn-gradient text-white px-6 py-2.5"
+                    onClick={() => {
+                      if (selectedFile) {
+                        onImageSelect(selectedFile);
+                      } else {
+                        toast.error("No image selected");
+                      }
+                    }}>
                     <Sparkles className="mr-2 h-4 w-4" /> Analyze Image
                   </Button>
                 </motion.div>
