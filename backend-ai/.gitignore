@@ -1,0 +1,4 @@
+venv
+.env
+.datset
+.yolov8

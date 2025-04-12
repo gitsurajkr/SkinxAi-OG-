@@ -1,0 +1,18 @@
+{
+    "test_accuracy": "100.00%",
+    "classes": [
+        "images",
+        "labels"
+    ],
+    "confusion_matrix": [
+        [
+            43,
+            0
+        ],
+        [
+            0,
+            0
+        ]
+    ],
+    "classification_report": "              precision    recall  f1-score   support\n\n      images       1.00      1.00      1.00        43\n      labels       0.00      0.00      0.00         0\n\n    accuracy                           1.00        43\n   macro avg       0.50      0.50      0.50        43\nweighted avg       1.00      1.00      1.00        43\n"
+}

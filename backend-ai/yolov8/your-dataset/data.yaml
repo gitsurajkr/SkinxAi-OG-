@@ -1,0 +1,13 @@
+train: C:/Users/kumar/Desktop/backend-ai/dataset/train/images
+val: C:/Users/kumar/Desktop/backend-ai/dataset/valid/images
+test: C:/Users/kumar/Desktop/backend-ai/dataset/test/images
+
+nc: 1
+names: ['images']
+
+roboflow:
+  workspace: suarj
+  project: skinxai
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/suarj/skinxai/dataset/1
