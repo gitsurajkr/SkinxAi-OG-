@@ -1,8 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-import uuid
-import cv2
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image as keras_image
@@ -11,6 +9,11 @@ import google.generativeai as genai
 import base64
 import json
 import logging
+import uuid
+import cv2
+import base64
+from werkzeug.utils import secure_filename
+import re
 
 # === Init Flask ===
 app = Flask(__name__)
@@ -28,7 +31,6 @@ YOLO_MODEL_PATH = 'yolov8/skinx-train/weights/best.pt'
 detector = YOLO(YOLO_MODEL_PATH)
 
 # === Load Class Names ===
-
 def load_class_names(fallback_dir='dataset/train'):
     if not os.path.isdir(fallback_dir):
         raise FileNotFoundError(f"Fallback directory '{fallback_dir}' not found")
@@ -41,7 +43,6 @@ def load_class_names(fallback_dir='dataset/train'):
     logging.info(f"Using class names from folders: {class_names}")
     return class_names
 
-
 CLASS_NAMES = load_class_names()
 logging.info(f"Loaded class names: {CLASS_NAMES}")
 
@@ -49,12 +50,46 @@ logging.info(f"Loaded class names: {CLASS_NAMES}")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
+EXPECTED_KEYS = [
+    "advice", "condition", "seriousness", "treatment_options",
+    "recommended_products", "habits_to_avoid", "prevention_tips",
+    "when_to_see_a_doctor", "emotional_support", "common_misconceptions",
+    "lifestyle_adjustments", "natural_remedies", "summary"
+]
+
 # === Preprocess Image for Classifier ===
 def preprocess_for_classifier(img_path):
     img = keras_image.load_img(img_path, target_size=(224, 224))
     img_array = keras_image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0) / 255.0
     return img_array
+
+def classify_image(image_path):
+    img_array = preprocess_for_classifier(image_path)
+    predictions = classifier.predict(img_array)
+    predicted_index = np.argmax(predictions[0])
+    confidence = float(predictions[0][predicted_index])
+    predicted_label = CLASS_NAMES[predicted_index]
+
+    logging.info(f"Predictions: {predictions}")
+    logging.info(f"Prediction: {predicted_label} (Confidence: {confidence:.2f})")
+    
+    return predicted_label, round(confidence, 2)
+
+def run_yolo_detection(image_path):
+    try:
+        results = detector(image_path)
+
+        if not results or not hasattr(results[0], 'plot'):
+            logging.error("YOLO results are not in the expected format.")
+            return None
+
+        annotated_img = results[0].plot()  # This is a numpy array (BGR)
+        return annotated_img
+
+    except Exception as e:
+        logging.error(f"Error in YOLO detection: {str(e)}")
+        return None
 
 # === Get Gemini Advice ===
 def get_advice_from_gemini(condition_name):
@@ -66,140 +101,198 @@ def get_advice_from_gemini(condition_name):
     Provide the response strictly in the following JSON format:
 
     {{
-      "advice": "Offer kind, helpful advice. Speak directly to the person in a supportive and human tone.",
-      "condition": "Explain what this condition generally is, how it affects people, and typical signs.",
-      "seriousness": "Describe whether this condition is usually minor or could sometimes be more serious. Offer a calm explanation.",
-      "treatment_options": "List typical over-the-counter treatments, skincare routines, or remedies people use.",
-      "recommended_products": "Suggest common, widely available products that might help (e.g., gentle cleansers, creams, etc.).",
-      "habits_to_avoid": "Share daily habits or actions that could make the condition worse, and how to avoid them.",
-      "prevention_tips": "Offer tips for preventing this condition from returning or getting worse in the future.",
-      "when_to_see_a_doctor": "List symptoms, warning signs, or situations when the user should definitely consult a dermatologist.",
-      "emotional_support": "Reassure the user emotionally—remind them that they are not alone and it's okay to feel concerned.",
-      "common_misconceptions": "Clear up popular myths or misunderstandings about this condition in simple terms.",
-      "lifestyle_adjustments": "Offer guidance on diet, stress, sleep, or hygiene changes that might help.",
-      "natural_remedies": "Share gentle home remedies that some people find helpful, but clarify they are not a substitute for medical care.",
-      "summary": "Wrap everything up in a kind, encouraging message. End with this disclaimer: 'Please remember, this is not a medical diagnosis. While AI can assist, it's always best to consult a certified dermatologist for a professional opinion.'"
+      "sections": [
+        {{
+          "key": "advice",
+          "title": "Supportive Advice",
+          "content": "Offer kind, helpful advice. Speak directly to the person in a supportive and human tone."
+        }},
+        {{
+          "key": "condition",
+          "title": "About This Condition",
+          "content": "Explain what this condition generally is, how it affects people, and typical signs."
+        }},
+        {{
+          "key": "seriousness",
+          "title": "How Serious Is It?",
+          "content": "Describe whether this condition is usually minor or could sometimes be more serious. Offer a calm explanation."
+        }},
+        {{
+          "key": "treatment_options",
+          "title": "Treatment Options",
+          "content": "List typical over-the-counter treatments, skincare routines, or remedies people use."
+        }},
+        {{
+          "key": "recommended_products",
+          "title": "Recommended Products",
+          "content": "Suggest common, widely available products that might help (e.g., gentle cleansers, creams, etc.)."
+        }},
+        {{
+          "key": "habits_to_avoid",
+          "title": "Habits to Avoid",
+          "content": "Share daily habits or actions that could make the condition worse, and how to avoid them."
+        }},
+        {{
+          "key": "prevention_tips",
+          "title": "Prevention Tips",
+          "content": "Offer tips for preventing this condition from returning or getting worse in the future."
+        }},
+        {{
+          "key": "when_to_see_a_doctor",
+          "title": "When to See a Doctor",
+          "content": "List symptoms, warning signs, or situations when the user should definitely consult a dermatologist."
+        }},
+        {{
+          "key": "emotional_support",
+          "title": "Emotional Support",
+          "content": "Reassure the user emotionally—remind them that they are not alone and it's okay to feel concerned."
+        }},
+        {{
+          "key": "common_misconceptions",
+          "title": "Common Misconceptions",
+          "content": "Clear up popular myths or misunderstandings about this condition in simple terms."
+        }},
+        {{
+          "key": "lifestyle_adjustments",
+          "title": "Lifestyle Adjustments",
+          "content": "Offer guidance on diet, stress, sleep, or hygiene changes that might help."
+        }},
+        {{
+          "key": "natural_remedies",
+          "title": "Natural Remedies",
+          "content": "Share gentle home remedies that some people find helpful, but clarify they are not a substitute for medical care."
+        }},
+        {{
+          "key": "summary",
+          "title": "Summary",
+          "content": "Wrap everything up in a kind, encouraging message. End with this disclaimer: 'Please remember, this is not a medical diagnosis. While AI can assist, it's always best to consult a certified dermatologist for a professional opinion.'"
+        }}
+      ]
     }}
 
     Please make sure each field is filled out clearly and thoroughly, using simple, non-technical language. Do not include any extra text—output only the JSON and nothing else.
     """
+
     try:
         model = genai.GenerativeModel('gemini-1.5-pro-latest')
         response = model.generate_content(prompt)
-        return response.text.strip() if response.text else "No response from Gemini."
+
+        raw_text = response.text.strip()
+        logging.info(f"Gemini raw response: {repr(raw_text)}")
+
+        if not raw_text:
+            logging.error("Empty response from Gemini")
+            return None
+
+        return raw_text
+
     except Exception as e:
-        return f"Gemini error: {str(e)}"
+        logging.error(f"Gemini API error: {e}")
+        return None
 
-
-# === Decode Base64 Image ===
-def decode_base64_image(b64_image, file_path):
+# === Parse Gemini Response ===
+def parse_gemini_response(response_text):
     try:
-        if "base64," in b64_image:
-            b64_image = b64_image.split("base64,")[-1]  # Remove any base64 prefix
-        img_data = base64.b64decode(b64_image)
-        with open(file_path, 'wb') as f:
-            f.write(img_data)
-        return True
-    except Exception as e:
-        logging.error(f"Base64 decoding error: {e}")
-        return False
+        cleaned = re.sub(r"^```(?:json)?\n*(.*?)\n*```$", r"\1", response_text.strip(), flags=re.DOTALL)
+        data = json.loads(cleaned)
+        sections = data.get("sections", [])
 
-# === Predict Endpoint ===
-@app.route('/predict', methods=['POST'])
-def predict():
-    file_path = None
+        sections_dict = {sec.get("key"): sec for sec in sections if sec.get("key")}
+
+        for key in EXPECTED_KEYS:
+            if key not in sections_dict:
+                sections_dict[key] = {
+                    "key": key,
+                    "title": key.replace("_", " ").title(),
+                    "content": f"No information available for {key.replace('_', ' ')}."
+                }
+
+        return {"sections": list(sections_dict.values())}
+
+    except Exception as e:
+        logging.error(f"Failed to decode Gemini response: {e}")
+        return {
+            "sections": [{
+                "key": "error",
+                "title": "Error",
+                "content": "We couldn't generate full information at this time. Please try again later."
+            }]
+        }
+
+# === Save Uploaded Image to Temporary File ===
+def save_temp_image(file_storage, upload_dir='temp_uploads'):
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}.jpg"
+    file_path = os.path.join(upload_dir, filename)
+    file_storage.save(file_path)
+    return file_path
+
+# === Delete Temporary File ===
+def remove_temp_image(file_path):
     try:
-        # Check for image data
-        if 'image' in request.files:
-            # Handle image file upload (multipart/form-data)
-            file = request.files['image']
-            if not file.mimetype.startswith('image/'):
-                return jsonify({'error': 'Unsupported file type'}), 400
-
-            os.makedirs('temp', exist_ok=True)
-            file_path = f"temp/{uuid.uuid4().hex}.jpg"
-            file.save(file_path)
-
-        elif 'image' in request.json:
-            # Handle base64 image
-            b64_image = request.json['image']
-            file_path = f"temp/{uuid.uuid4().hex}.jpg"
-            if not decode_base64_image(b64_image, file_path):
-                return jsonify({'error': 'Failed to decode base64 image'}), 400
-
-        else:
-            return jsonify({'error': 'No image uploaded'}), 400
-
-        # === Step 1: Classify Skin Condition ===
-        img_for_cls = preprocess_for_classifier(file_path)
-        predictions = classifier.predict(img_for_cls)
-
-        if predictions.shape[-1] > 1:
-            predictions = tf.nn.softmax(predictions).numpy()
-
-        logging.info(f"Predictions: {predictions}")  # Log predictions
-
-        # Check if predictions are empty or invalid
-        if predictions.size == 0:
-            return jsonify({'error': 'Model prediction failed'}), 500
-
-        pred_index = np.argmax(predictions[0])
-        
-        # Log CLASS_NAMES and check its length
-        logging.info(f"CLASS_NAMES: {CLASS_NAMES}")
-        if len(CLASS_NAMES) <= pred_index:
-            return jsonify({'error': 'Prediction index out of bounds for class names'}), 500
-
-        predicted_condition = CLASS_NAMES[pred_index]
-        confidence_score = round(float(predictions[0][pred_index]), 2)
-
-        logging.info(f"Prediction: {predicted_condition} (Confidence: {confidence_score})")
-
-        # === Step 2: Detect with YOLOv8 ===
-        yolo_results = detector(file_path)[0]
-        detections = []
-        CONF_THRESHOLD = 0.5
-
-        for box in yolo_results.boxes:
-            conf = float(box.conf.cpu().numpy()[0])
-            if conf < CONF_THRESHOLD:
-                continue
-            coords = box.xyxy.cpu().numpy().astype(int)[0].tolist()
-            detections.append({'bbox': coords, 'confidence': round(conf, 2)})
-
-        # === Step 3: Annotate Image ===
-        annotated_img_base64 = None
-        try:
-            annotated_img = yolo_results.plot()
-            temp_annotated_path = f"temp/annotated_{uuid.uuid4().hex}.jpg"
-            cv2.imwrite(temp_annotated_path, annotated_img)
-
-            with open(temp_annotated_path, "rb") as f:
-                annotated_img_base64 = base64.b64encode(f.read()).decode('utf-8')
-            os.remove(temp_annotated_path)
-        except Exception as e:
-            logging.error(f"Annotation error: {str(e)}")
-
-        # === Step 4: Get Gemini Advice ===
-        advice = get_advice_from_gemini(predicted_condition)
-
-        # === Final Output ===
-        return jsonify({
-            'condition': predicted_condition,
-            'confidence': confidence_score,
-            'detections': detections,
-            'advice': advice,
-            'annotated_image': annotated_img_base64
-        })
-
-    except Exception as e:
-        logging.error(f"Server error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-    finally:
-        if file_path and os.path.exists(file_path):
+        if os.path.exists(file_path):
             os.remove(file_path)
+            logging.info(f"Temporary file deleted: {file_path}")
+    except Exception as e:
+        logging.warning(f"Failed to delete temporary file: {file_path} - {e}")
 
+# === Detect with YOLOv8 ===
+def detect_with_yolov8(image_path):
+    try:
+        results = detector(image_path)
+        if isinstance(results, list):
+            results = results[0]
+
+        if hasattr(results, 'render'):
+            annotated_img = results.render()[0]
+        else:
+            logging.error("YOLO results are not in the expected format.")
+            annotated_img = None
+
+        detections = []
+        for result in results:
+            for bbox in result.boxes:
+                detections.append({
+                    'class': int(bbox.cls),
+                    'confidence': float(bbox.conf),
+                    'bbox': bbox.xywh.tolist()
+                })
+
+        annotated_img = results[0].plot()
+        _, buffer = cv2.imencode('.jpg', annotated_img)
+        annotated_img_base64 = base64.b64encode(buffer).decode('utf-8')
+
+        return detections, annotated_img_base64
+
+    except Exception as e:
+        logging.error(f"Error in YOLO detection: {e}")
+        return [], ""
+
+# === /predict Route ===
+@app.route("/predict", methods=["POST"])
+def predict():
+    try:
+        image_file = request.files["image"]
+        image_path = save_temp_image(image_file)
+
+        # detections, base64_img = detect_with_yolov8(image_path)
+        predicted_label, confidence = classify_image(image_path)
+
+        gemini_raw = get_advice_from_gemini(predicted_label)
+        parsed_gemini_response = parse_gemini_response(gemini_raw)
+
+        remove_temp_image(image_path)
+
+        return jsonify({
+            # "yolo_overlay": base64_img,
+            "condition": predicted_label,
+            "confidence": confidence,
+            "gemini_advice": parsed_gemini_response,
+            # "detections": detections
+        })
+    except Exception as e:
+        logging.error(f"Prediction error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # === Run Server ===
 if __name__ == '__main__':

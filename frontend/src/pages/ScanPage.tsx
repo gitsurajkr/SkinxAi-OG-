@@ -3,25 +3,55 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import ScanUploader from "@/components/ScanUploader";
 import ResultsDisplay from "@/components/ResultDisplay";
+import { toast } from "sonner";
+import axios from "axios";
 
 const ScanPage = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [hasResults, setHasResults] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [results, setResults] = useState<{
+    condition: string;
+    confidence: number;
+    gemini_advice: { sections: { key: string; title: string; content: string }[] };
+  } | undefined>(undefined); // Initializing as undefined instead of null
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
 
   const handleImageSelect = (file: File) => {
-    setSelectedImage(URL.createObjectURL(file));
-    // In a real app, you'd send this file to your backend for processing
-    // For now, we'll simulate the loading and result states
-    setIsLoading(true);
-    setHasResults(false);
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsLoading(false);
-      setHasResults(true);
-    }, 3000);
+    setSelectedImageFile(file);
+    // setSelectedImagePreview(URL.createObjectURL(file));
+    setResults(undefined);
   };
+
+  const handleAnalyze = async () => {
+    if (!selectedImageFile) {
+      toast.error("Please upload an image first.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      toast.message("Analyzing your skin...");
+
+      const formData = new FormData();
+      formData.append("image", selectedImageFile);
+
+      const response = await axios.post("http://localhost:5000/predict", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setResults(response.data);
+      console.log("Analysis results:", response.data);
+      toast.success("Analysis complete!");
+    } catch (error) {
+      toast.error("Error analyzing image");
+      console.error("Analyze error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  console.log("Results being passed to ResultsDisplay:", results);
+
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -37,7 +67,7 @@ const ScanPage = () => {
           Upload a clear selfie to analyze your skin condition. Our AI will detect issues like acne, eczema, and other common skin conditions.
         </p>
       </motion.div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -47,10 +77,11 @@ const ScanPage = () => {
           <div className="fancy-border p-px rounded-xl mb-6">
             <div className="fancy-border-content p-6 rounded-[calc(var(--radius)-1px)]">
               <h2 className="text-xl font-semibold mb-4 font-heading text-gradient">Upload Your Skin Image</h2>
-              <ScanUploader onImageSelect={handleImageSelect} />
+              <ScanUploader onImageSelect={handleImageSelect}
+                onAnalyze={handleAnalyze} />
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div className="fancy-border p-px rounded-xl">
               <div className="fancy-border-content p-4 rounded-[calc(var(--radius)-1px)]">
@@ -63,7 +94,7 @@ const ScanPage = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="fancy-border p-px rounded-xl">
               <div className="fancy-border-content p-4 rounded-[calc(var(--radius)-1px)]">
                 <h3 className="text-lg font-medium mb-2 font-heading flex items-center gap-2">
@@ -75,7 +106,7 @@ const ScanPage = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="fancy-border p-px rounded-xl">
               <div className="fancy-border-content p-4 rounded-[calc(var(--radius)-1px)]">
                 <h3 className="text-lg font-medium mb-2 font-heading flex items-center gap-2">
@@ -89,7 +120,7 @@ const ScanPage = () => {
             </div>
           </div>
         </motion.div>
-        
+
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -98,10 +129,11 @@ const ScanPage = () => {
         >
           <div className="fancy-border-content p-6 rounded-[calc(var(--radius)-1px)]">
             <h2 className="text-xl font-semibold mb-4 font-heading">Results</h2>
-            <ResultsDisplay 
-              isLoading={isLoading} 
-              hasResults={hasResults}
-              image={selectedImage || undefined}
+            <ResultsDisplay
+              hasResults={!!results}
+              isLoading={isLoading}
+              imageFile={selectedImageFile}
+              results={results}
             />
           </div>
         </motion.div>
