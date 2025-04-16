@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import {  CheckCircle, HelpCircle, Info, Shield, Sparkles, AlertTriangle, Crosshair } from "lucide-react";
+import { CheckCircle, HelpCircle, Info, Shield, Sparkles, AlertTriangle, Crosshair } from "lucide-react";
 import axios from "axios";
+
 interface DetectionBox {
   id: number;
   x: number;
@@ -15,22 +16,33 @@ interface DetectionBox {
   confidence: number;
 }
 
+interface DetectionTabProps {
+  imageSrc: string;
+  boxes: DetectionBox[] | undefined;
+}
+
+interface GeminiAdviceSection {
+  key: string;
+  title: string;
+  content: string;
+}
+
+interface ResultsData {
+  condition: string;
+  confidence: number;
+  gemini_advice: {
+    sections: GeminiAdviceSection[];
+  };
+  detections?: DetectionBox[];
+}
+
 interface ResultsDisplayProps {
   isLoading?: boolean;
   hasResults?: boolean;
   imageFile?: File | string | null;
-  results?: {
-    condition: string;
-    confidence: number;
-    gemini_advice: {
-      sections: {
-        key: string;
-        title: string;
-        content: string;
-      }[];
-    };
-  };
+  results?: ResultsData;
 }
+
 
 const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: ResultsDisplayProps) => {
   console.log("🚀 Props Received:", { isLoading, hasResults, imageFile });
@@ -64,13 +76,13 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
       console.log("🖼️ New image uploaded, fetching prediction...");
 
       fetchPrediction(imageFile);
-    }else {
+    } else {
       console.log("⚠️ imageFile is not a valid File. Skipping fetch.");
     }
   }, [imageFile]);
 
   const renderLoading = () => (
-    <motion.div 
+    <motion.div
       className="py-12 flex flex-col items-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -81,13 +93,13 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
           <div className="w-16 h-16 rounded-full border-4 border-r-skinx-purple-light border-skinx-purple/30 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
         </div>
       </div>
-      
+
       <h3 className="text-xl font-semibold mb-2 mt-6 font-heading">Analyzing your image</h3>
       <p className="text-gray-400 text-center max-w-md">
         Our AI is examining the image for skin conditions and imperfections.
         This usually takes 10-20 seconds.
       </p>
-      
+
       <motion.div
         className="w-full max-w-xs mt-6"
         initial={{ opacity: 0 }}
@@ -104,14 +116,14 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
   );
 
   const renderEmptyState = () => (
-    <motion.div 
+    <motion.div
       className="py-12 flex flex-col items-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <motion.div 
+      <motion.div
         className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-6 relative overflow-hidden"
-        animate={{ 
+        animate={{
           boxShadow: ['0 0 0 0 rgba(155, 135, 245, 0.2)', '0 0 20px 5px rgba(155, 135, 245, 0.3)', '0 0 0 0 rgba(155, 135, 245, 0.2)']
         }}
         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
@@ -119,13 +131,13 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
         <HelpCircle className="h-12 w-12 text-gray-400" />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent shimmer" />
       </motion.div>
-      
+
       <h3 className="text-xl font-semibold mb-2 font-heading">No Results Yet</h3>
       <p className="text-gray-400 text-center max-w-md">
         Upload an image of your skin to receive an AI-powered analysis
       </p>
-      
-      <motion.div 
+
+      <motion.div
         className="mt-8 px-6 py-3 rounded-lg border border-dashed border-skinx-teal/30 bg-skinx-teal/5 flex items-center gap-3"
         initial={{ y: 10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -139,104 +151,183 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
     </motion.div>
   );
 
-  // const renderDetectionBoxes = () => {
-  //   if (!image) return null;
-    
-  //   return (
-  //     <div className="relative w-full">
-  //       <img src={image} alt="Analyzed skin" className="w-full rounded-lg" />
-  //       {mockResults.detections.map((box) => (
-  //         <div
-  //           key={box.id}
-  //           className="absolute border-2 border-skinx-teal pointer-events-none"
-  //           style={{
-  //             left: `${box.x}%`,
-  //             top: `${box.y}%`,
-  //             width: `${box.width}%`,
-  //             height: `${box.height}%`,
-  //           }}
-  //         >
-  //           <div className="absolute -top-7 left-0 bg-skinx-teal px-2 py-0.5 text-xs rounded text-white whitespace-nowrap">
-  //             {box.label} ({Math.round(box.confidence * 100)}%)
-  //           </div>
-  //         </div>
-  //       ))}
-  //     </div>
-  //   );
-  // };
+  const DetectionTab = ({ imageSrc, boxes }: DetectionTabProps) => {
+    const safeBoxes = boxes ?? [];
+    return (
+      <div className="relative w-full max-w-[500px] mx-auto">
+        <img src={imageSrc} alt="Detection" className="w-full rounded-lg shadow" />
 
-  const renderResults = () =>{
+        {safeBoxes.map((box, index) => (
+          <div
+            key={index}
+            className="absolute border-2 border-red-500 z-10"
+            style={{
+              left: `${box.x}px`,
+              top: `${box.y}px`,
+              width: `${box.width}px`,
+              height: `${box.height}px`,
+            }}
+          >
+            <div className="absolute -top-6 left-0 bg-red-500 text-white text-xs px-2 py-1 rounded">
+              {box.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderResults = () => {
     console.log("🧪 Current Results:", results);
     if (!results) {
       console.log("⚠️ No results to render.");
       return null;
     }
-  
+
     const { condition, confidence, gemini_advice } = results;
     console.log("🧪 Rendering results for:", { condition, confidence, gemini_advice });;
     return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="mb-8 text-center">
-        <motion.div 
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-900/30 text-green-400 mb-4 border border-green-700/50"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.3, type: "spring" }}
-        >
-          <CheckCircle size={16} />
-          <span>Analysis Complete</span>
-        </motion.div>
-        
-      </div>
-      
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 mb-6 bg-muted/50 p-1">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Overview</TabsTrigger>
-          
-        </TabsList>
-        
-        <AnimatePresence mode="wait">
-          <TabsContent value="overview">
-            <motion.div 
-              className="bg-gradient-card rounded-xl p-6 shadow-md border border-white/5"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              {gemini_advice?.sections.map((section, index) => (
-  <div key={section.key} className="mb-6">
-    <h3 className="text-lg font-medium mb-3 flex items-center gap-2 text-white font-heading">
-      {/* Optional icons if you want to cycle or assign dynamically */}
-      <Info size={18} className="text-skinx-teal" />
-      {section.title}
-    </h3>
-    <p className="text-gray-300 whitespace-pre-line">{section.content}</p>
-  </div>
-))}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="mb-8 text-center">
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-900/30 text-green-400 mb-4 border border-green-700/50"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3, type: "spring" }}
+          >
+            <CheckCircle size={16} />
+            <span>Analysis Complete</span>
+          </motion.div>
 
-            </motion.div>
-          </TabsContent>
-          
-         
-        </AnimatePresence>
-      </Tabs>
-    </motion.div>
-  );
-}
+        </div>
 
-if (isLoading || loading) return renderLoading();
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="w-full grid grid-cols-4 mb-6 bg-muted/50 p-1">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Overview</TabsTrigger>
+            <TabsTrigger value="detection" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Detection</TabsTrigger>
+            <TabsTrigger value="recommendations" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Recommendations</TabsTrigger>
+            <TabsTrigger value="differential" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Differential</TabsTrigger>
 
-if (!results) {
-  console.log("🕳️ No results found yet — showing empty state.");
-  return renderEmptyState();
-}
+          </TabsList>
 
-return renderResults();
+          <AnimatePresence mode="wait">
+            <TabsContent value="overview">
+              <motion.div
+                className="bg-gradient-card rounded-xl p-6 shadow-md border border-white/5"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {gemini_advice?.sections.map((section, index) => (
+                  <div key={section.key} className="mb-6">
+                    <h3 className="text-lg font-medium mb-3 flex items-center gap-2 text-white font-heading">
+                      {/* Optional icons if you want to cycle or assign dynamically */}
+                      <Info size={18} className="text-skinx-teal" />
+                      {section.title}
+                    </h3>
+                    <p className="text-gray-300 whitespace-pre-line">{section.content}</p>
+                  </div>
+                ))}
+
+              </motion.div>
+            </TabsContent>
+
+            {/* <TabsContent value="detection">
+              <motion.div
+                // className="bg-gradient-card rounded-xl p-6 shadow-md border border-white/5"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium mb-3 flex items-center gap-2 text-white font-heading">
+                    <Crosshair size={18} className="text-skinx-purple" />
+                    Pimple Detection
+                  </h3>
+                  <p className="text-gray-300 mb-4">
+                    Our AI has detected several pimples and acne-related spots on your skin. These are highlighted below.
+                  </p>
+
+                  <DetectionTab
+                    imageSrc={typeof imageFile === "string" ? imageFile : imageFile ? URL.createObjectURL(imageFile) : ""}
+                    boxes={results.detections}
+                  />
+                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {results.detections && results.detections.length > 0 ? (
+                      results.detections.map((detection) => (
+                        <div key={detection.id} className="fancy-border p-px">
+                          <div className="fancy-border-content p-3 rounded-[calc(var(--radius)-1px)]">
+                            <h4 className="font-medium text-skinx-teal-light mb-1">{detection.label}</h4>
+                            <p className="text-xs text-gray-400">
+                              Confidence: {Math.round(detection.confidence * 100)}%
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p>No detections available.</p> // Optional: Add a message if there are no detections
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <h3 className="text-lg font-medium mb-3 text-white font-heading">
+                    Understanding Detection Results
+                  </h3>
+                  <p className="text-gray-300 mb-2">
+                    Our AI identifies different types of acne lesions:
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-300">
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-skinx-teal mt-1.5" />
+                      <div>
+                        <span className="font-medium text-white">Papules:</span> Small red bumps that can be tender to touch
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-skinx-teal mt-1.5" />
+                      <div>
+                        <span className="font-medium text-white">Pustules:</span> Papules with white or yellow centers (what most people call pimples)
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-skinx-teal mt-1.5" />
+                      <div>
+                        <span className="font-medium text-white">Whiteheads:</span> Closed comedones that remain under the skin
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-skinx-teal mt-1.5" />
+                      <div>
+                        <span className="font-medium text-white">Blackheads:</span> Open comedones that appear as small black dots on the skin
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </motion.div>
+            </TabsContent>
+ */}
+
+          </AnimatePresence>
+        </Tabs>
+      </motion.div>
+    );
+  }
+
+  if (isLoading || loading) return renderLoading();
+
+  if (!results) {
+    console.log("🕳️ No results found yet — showing empty state.");
+    return renderEmptyState();
+  }
+
+  return renderResults();
 };
 
 export default ResultsDisplay;

@@ -14,7 +14,7 @@ const ScanPage = () => {
     gemini_advice: { sections: { key: string; title: string; content: string }[] };
   } | undefined>(undefined); // Initializing as undefined instead of null
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
+  // const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
 
   const handleImageSelect = (file: File) => {
     setSelectedImageFile(file);

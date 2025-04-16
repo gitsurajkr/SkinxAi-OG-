@@ -223,3 +223,5 @@
             //   label: string;
             //   confidence: number;
             // }
+
+            // const { condition, confidence, gemini_advice } = results;

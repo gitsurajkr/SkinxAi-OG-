@@ -240,27 +240,36 @@ def remove_temp_image(file_path):
 def detect_with_yolov8(image_path):
     try:
         results = detector(image_path)
-        if isinstance(results, list):
-            results = results[0]
+        result = results[0]  # Take the first result object
 
-        if hasattr(results, 'render'):
-            annotated_img = results.render()[0]
-        else:
-            logging.error("YOLO results are not in the expected format.")
-            annotated_img = None
+        # === Annotated image (OpenCV image with boxes drawn)
+        annotated_img = result.plot()  # This is a NumPy array (BGR)
 
-        detections = []
-        for result in results:
-            for bbox in result.boxes:
-                detections.append({
-                    'class': int(bbox.cls),
-                    'confidence': float(bbox.conf),
-                    'bbox': bbox.xywh.tolist()
-                })
-
-        annotated_img = results[0].plot()
+        # === Encode image as base64
         _, buffer = cv2.imencode('.jpg', annotated_img)
         annotated_img_base64 = base64.b64encode(buffer).decode('utf-8')
+
+        # === Parse detection boxes
+        detections = []
+        if result.boxes is not None:
+            for i, box in enumerate(result.boxes):
+                x, y, w, h = box.xywh[0]  # tensor -> 1 row
+                label = detector.names[int(box.cls[0])]  # class name
+                confidence = float(box.conf[0])
+
+                detections.append({
+                    "id": i,
+                    "x": float(x),
+                    "y": float(y),
+                    "width": float(w),
+                    "height": float(h),
+                    "label": label,
+                    "confidence": confidence
+                })
+        else:
+            logging.info("No boxes detected by YOLO.")
+
+        logging.info(f"Total detections: {len(detections)}")
 
         return detections, annotated_img_base64
 
@@ -275,7 +284,7 @@ def predict():
         image_file = request.files["image"]
         image_path = save_temp_image(image_file)
 
-        # detections, base64_img = detect_with_yolov8(image_path)
+        detections, base64_img = detect_with_yolov8(image_path)
         predicted_label, confidence = classify_image(image_path)
 
         gemini_raw = get_advice_from_gemini(predicted_label)
@@ -284,11 +293,11 @@ def predict():
         remove_temp_image(image_path)
 
         return jsonify({
-            # "yolo_overlay": base64_img,
+            "yolo_overlay": base64_img,
             "condition": predicted_label,
             "confidence": confidence,
             "gemini_advice": parsed_gemini_response,
-            # "detections": detections
+            "detections": detections
         })
     except Exception as e:
         logging.error(f"Prediction error: {e}")
