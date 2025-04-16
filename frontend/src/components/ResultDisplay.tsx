@@ -152,6 +152,17 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
   );
 
   const DetectionTab = ({ imageSrc, boxes }: DetectionTabProps) => {
+    const imageRef = useRef<HTMLImageElement>(null);
+    const [imageSize, setImageSize] = useState({ width: 1, height: 1 });
+
+    useEffect(() => {
+      const img = imageRef.current;
+      if (img) {
+        setImageSize({ width: img.offsetWidth, height: img.offsetHeight });
+      }
+    }, [imageSrc]);
+
+
     const safeBoxes = boxes ?? [];
     return (
       <div className="relative w-full max-w-[500px] mx-auto">
@@ -162,10 +173,10 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
             key={index}
             className="absolute border-2 border-red-500 z-10"
             style={{
-              left: `${box.x}px`,
-              top: `${box.y}px`,
-              width: `${box.width}px`,
-              height: `${box.height}px`,
+              left: `${(box.x / 416) * imageSize.width}px`,
+              top: `${(box.y / 416) * imageSize.height}px`,
+              width: `${(box.width / 416) * imageSize.width}px`,
+              height: `${(box.height / 416) * imageSize.height}px`,
             }}
           >
             <div className="absolute -top-6 left-0 bg-red-500 text-white text-xs px-2 py-1 rounded">
@@ -210,7 +221,7 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
             <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Overview</TabsTrigger>
             <TabsTrigger value="detection" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Detection</TabsTrigger>
             <TabsTrigger value="recommendations" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Recommendations</TabsTrigger>
-            <TabsTrigger value="differential" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Differential</TabsTrigger>
+            {/* <TabsTrigger value="differential" className="data-[state=active]:bg-gradient-to-r from-skinx-teal/80 to-skinx-teal-light/80 data-[state=active]:text-white">Differential</TabsTrigger> */}
 
           </TabsList>
 
@@ -223,7 +234,7 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
-                {gemini_advice?.sections.map((section, index) => (
+                {gemini_advice?.sections.map((section) => (
                   <div key={section.key} className="mb-6">
                     <h3 className="text-lg font-medium mb-3 flex items-center gap-2 text-white font-heading">
                       {/* Optional icons if you want to cycle or assign dynamically */}
@@ -236,10 +247,11 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
 
               </motion.div>
             </TabsContent>
+            </AnimatePresence>
 
-            {/* <TabsContent value="detection">
+            <TabsContent value="detection">
               <motion.div
-                // className="bg-gradient-card rounded-xl p-6 shadow-md border border-white/5"
+                className="bg-gradient-card rounded-xl p-6 shadow-md border border-white/5"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -312,9 +324,91 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
                 </div>
               </motion.div>
             </TabsContent>
- */}
 
-          </AnimatePresence>
+            <TabsContent value="recommendations">
+              <motion.div
+                className="bg-gradient-card rounded-xl p-6 shadow-md border border-white/5"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ul className="space-y-5">
+                  {results?.gemini_advice?.sections
+                    ?.filter(section =>
+                      [
+                        "treatment_options",
+                        "recommended_products",
+                        "habits_to_avoid",
+                        "prevention_tips",
+                        "lifestyle_adjustments",
+                        "natural_remedies",
+                      ].includes(section.key)
+                    )
+                    .map((rec, index) => (
+                      <motion.li
+                        key={index}
+                        className="flex items-start gap-3 relative fancy-border p-px"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                      >
+                        <div className="flex items-start gap-3 p-3 w-full bg-card/95 rounded-[calc(var(--radius)-1px)]">
+                          {/* <div className="mt-1 w-8 h-8 rounded-full bg-gradient-to-br from-skinx-teal to-skinx-purple flex items-center justify-center text-white font-semibold text-sm shadow-md">
+                            {index + 1}
+                          </div> */}
+                          <div>
+                            <h4 className="text-white font-medium mb-1 flex items-center gap-2">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 text-skinx-teal"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+                                />
+                              </svg>
+                              {rec.title}
+                            </h4>
+                            <p className="text-gray-200">{rec.content}</p>
+                          </div>
+                        </div>
+                      </motion.li>
+                    ))}
+                </ul>
+
+                <div className="mt-8 pt-6 border-t border-white/10">
+                  <h3 className="text-lg font-medium mb-4 font-heading text-gradient">Additional Resources</h3>
+                  <div className="space-y-3">
+                    {[
+                      "Understanding Different Types of Acne",
+                      "Daily Skincare Routine for Acne-Prone Skin",
+                      "When to See a Dermatologist",
+                    ].map((resource, index) => (
+                      <motion.a
+                        key={index}
+                        href="#"
+                        className="block text-skinx-teal hover:text-skinx-teal-light hover:translate-x-1 transition-all duration-300 flex items-center gap-2"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 + index * 0.1 }}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-skinx-teal" />
+                        {resource}
+                      </motion.a>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </TabsContent>
+
+
+          
         </Tabs>
       </motion.div>
     );
@@ -331,3 +425,7 @@ const ResultsDisplay = ({ isLoading = false, hasResults = false, imageFile }: Re
 };
 
 export default ResultsDisplay;
+
+function useRef<T>(initialValue: T | null): { current: T | null } {
+  return { current: initialValue };
+}

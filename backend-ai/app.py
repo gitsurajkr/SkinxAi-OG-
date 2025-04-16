@@ -14,6 +14,8 @@ import cv2
 import base64
 from werkzeug.utils import secure_filename
 import re
+from dotenv import load_dotenv
+load_dotenv()
 
 # === Init Flask ===
 app = Flask(__name__)
@@ -290,6 +292,9 @@ def predict():
         gemini_raw = get_advice_from_gemini(predicted_label)
         parsed_gemini_response = parse_gemini_response(gemini_raw)
 
+        # recommendations = get_recommendations_for_condition(predicted_label)
+
+
         remove_temp_image(image_path)
 
         return jsonify({
@@ -297,11 +302,52 @@ def predict():
             "condition": predicted_label,
             "confidence": confidence,
             "gemini_advice": parsed_gemini_response,
+            # "recommendations": recommendations,
+
             "detections": detections
         })
     except Exception as e:
         logging.error(f"Prediction error: {e}")
         return jsonify({"error": str(e)}), 500
+    
+@app.route("/chat", methods=["POST"])
+def chat():
+    user_message = request.json.get("message")
+    if not user_message:
+        return jsonify({"error": "No message provided"}), 400
+
+    system_prompt = (
+    "You are SkinxAI, an expert AI assistant specialized only in skincare, skin health, and beauty routines. "
+    "You should not answer any questions unrelated to skincare. "
+    "If the user asks something outside your domain (like tech, movies, or general knowledge), you must reply with: "
+    "'I’m your AI skincare assistant! Let’s talk about skin 😊'\n\n"
+    "Your responses should be well-structured, clear, and easy to read. Use the following guidelines:\n"
+    "1. **Break your answers into sections** with clear, concise headings (e.g., 'Cleansing', 'Treatment', 'Lifestyle Tips').\n"
+    "2. **Use bullet points or numbered lists** for steps or suggestions to make the content easy to follow.\n"
+    "3. Avoid large blocks of text—keep each section short and focused.\n"
+    "4. **Be clear and avoid technical jargon** unless necessary. Make sure the user can easily understand the advice.\n"
+    "5. If you discuss multiple suggestions, clearly **label each step** or point (e.g., 'Step 1: Cleanse Twice a Day').\n"
+    "6. Always end with a reminder of the importance of consistency and patience in skincare.\n\n"
+    "Remember to always be friendly, helpful, and professional in your tone!\n\n"
+    "If the user asks about specific products to use, provide general suggestions for types of products (e.g., cleansers, treatments, moisturizers) that are good for addressing acne or pimples. "
+    "However, avoid naming any specific brands, and focus on the ingredients or types of products that can help."
+)
+    try:
+        model = genai.GenerativeModel('gemini-1.5-pro-latest')
+
+        # Just send one combined prompt
+        full_prompt = system_prompt + f"User: {user_message}"
+        response = model.generate_content(full_prompt)
+
+        raw_text = response.text.strip()
+        logging.info(f"Chat response: {repr(raw_text)}")
+        return jsonify({"reply": raw_text})
+
+    except Exception as e:
+        logging.error(f"Gemini API error: {e}")
+        print("Gemini error:", e)
+        return jsonify({"reply": "Sorry, I ran into a problem. Please try again later."}), 500
+
 
 # === Run Server ===
 if __name__ == '__main__':
