@@ -2,12 +2,12 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  Camera, 
-  MessageSquare, 
-  Sparkles, 
+import {
+  Camera,
+  MessageSquare,
+  Sparkles,
   ShieldCheck,
-  PieChart, 
+  PieChart,
   Cpu
 } from "lucide-react";
 import Hero from "@/components/Hero";
@@ -22,7 +22,53 @@ const HomePage = () => {
     <div className="container mx-auto px-4 py-8">
       {/* Hero Section */}
       <Hero />
-      
+
+      <motion.section
+        className="text-center my-16 px-4" // Keep minimal base padding
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeIn}
+      >
+        <div className="fancy-border max-w-5xl mx-auto rounded-2xl">
+          <div className="fancy-border-content w-full py-16 px-6 sm:px-8 md:px-12 rounded-[calc(var(--radius)-1px)]">
+            <motion.h2
+              className="text-3xl md:text-4xl font-bold mb-4 font-heading text-skinx-teal"
+              variants={fadeIn}
+            >
+              Start Your Skincare Journey Today
+            </motion.h2>
+
+            <motion.p
+              className=" max-w-2xl mx-auto mb-8"
+              variants={fadeIn}
+            >
+              Upload a selfie or start chatting with our AI assistant to get personalized skincare recommendations tailored to your needs.
+            </motion.p>
+
+            <motion.div
+              className="flex flex-col sm:flex-row justify-center gap-4"
+              variants={fadeIn}
+            >
+              <Button asChild variant="outline" className="border-skinx-purple text-skinx-purple hover:bg-skinx-purple/10 hover:text-skinx-teal-light  px-6 py-4 h-auto text-base sm:text-lg font-medium">
+                <Link to="/scan">
+                  <Camera className="mr-2 h-5 w-5" />
+                  Analyze My Skin
+                </Link>
+              </Button>
+
+              <Button asChild variant="outline" className="border-skinx-purple text-skinx-purple hover:bg-skinx-purple/10 hover:text-skinx-teal-light px-6 py-4 h-auto text-base sm:text-lg font-medium">
+                <Link to="/chat">
+                  <MessageSquare className="mr-2 h-5 w-5" />
+                  Chat with AI
+                </Link>
+              </Button>
+            </motion.div>
+          </div>
+        </div>
+      </motion.section>
+
+
       {/* Main Features */}
       <motion.section
         className="my-20"
@@ -38,13 +84,13 @@ const HomePage = () => {
           }
         }}
       >
-        <motion.h2 
+        <motion.h2
           className="text-3xl md:text-4xl font-bold text-center mb-12 font-heading text-gradient"
           variants={fadeIn}
         >
           Powered by Advanced AI
         </motion.h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
             {
@@ -96,12 +142,12 @@ const HomePage = () => {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent shimmer" />
                   </div>
                 </div>
-                
+
                 <h3 className="text-xl font-semibold mb-2 font-heading">{feature.title}</h3>
                 <p className="text-gray-400 mb-6 flex-grow">{feature.description}</p>
-                
+
                 <Link to={feature.link} className="group inline-flex items-center text-skinx-teal hover:text-skinx-teal-light">
-                  Learn more 
+                  Learn more
                   <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
                 </Link>
               </div>
@@ -109,52 +155,8 @@ const HomePage = () => {
           ))}
         </div>
       </motion.section>
-        {/* Call to Action */}
-        <motion.section 
-  className="text-center my-16 px-4" // Keep minimal base padding
-  initial="hidden"
-  whileInView="visible"
-  viewport={{ once: true }}
-  variants={fadeIn}
->
-  <div className="fancy-border max-w-5xl mx-auto rounded-2xl">
-    <div className="fancy-border-content w-full py-16 px-6 sm:px-8 md:px-12 rounded-[calc(var(--radius)-1px)]"> 
-      <motion.h2 
-        className="text-3xl md:text-4xl font-bold mb-4 font-heading text-skinx-teal"
-        variants={fadeIn}
-      >
-        Start Your Skincare Journey Today
-      </motion.h2>
-
-      <motion.p 
-        className=" max-w-2xl mx-auto mb-8"
-        variants={fadeIn}
-      >
-        Upload a selfie or start chatting with our AI assistant to get personalized skincare recommendations tailored to your needs.
-      </motion.p>
-
-      <motion.div 
-        className="flex flex-col sm:flex-row justify-center gap-4"
-        variants={fadeIn}
-      >
-        <Button asChild variant="outline" className="border-skinx-purple text-skinx-purple hover:bg-skinx-purple/10 hover:text-skinx-teal-light  px-6 py-4 h-auto text-base sm:text-lg font-medium">
-        <Link to="/scan">
-            <Camera className="mr-2 h-5 w-5" />
-            Analyze My Skin
-          </Link>
-        </Button>
-        
-        <Button asChild variant="outline" className="border-skinx-purple text-skinx-purple hover:bg-skinx-purple/10 hover:text-skinx-teal-light px-6 py-4 h-auto text-base sm:text-lg font-medium">
-          <Link to="/chat">
-            <MessageSquare className="mr-2 h-5 w-5" />
-            Chat with AI
-          </Link>
-        </Button>
-      </motion.div>
-    </div>
-  </div>
-</motion.section>
-
+      {/* Call to Action */}
+      
     </div>
   );
 };

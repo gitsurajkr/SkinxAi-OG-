@@ -127,7 +127,7 @@ const ScanPage = () => {
           transition={{ delay: 0.4 }}
           className="fancy-border p-px rounded-xl"
         >
-          <div className="fancy-border-content p-6 rounded-[calc(var(--radius)-1px)]">
+          <div className="fancy-border-content h-full p-6 rounded-[calc(var(--radius)-1px)]">
             <h2 className="text-xl font-semibold mb-4 font-heading">Results</h2>
             <ResultsDisplay
               hasResults={!!results}
