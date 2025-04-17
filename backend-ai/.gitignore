@@ -1,0 +1,8 @@
+venv
+.env
+.datset
+.yolov8
+.datset
+.yolov8
+.model_v1.h5
+.skin_model_final.h5

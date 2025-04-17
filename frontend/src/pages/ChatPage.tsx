@@ -26,20 +26,30 @@ const ChatPage = () => {
     
     // Simulate AI response
     setIsLoading(true);
-    
-    // In a real app, you would make an API call to your backend here
-    setTimeout(() => {
-      const mockResponses = [
-        "To get glowing skin, focus on hydration, gentle exfoliation, and using vitamin C serums. Also, don't forget your SPF daily!",
-        "For acne-prone skin, I recommend a cleanser with salicylic acid, non-comedogenic moisturizer, and spot treatments with benzoyl peroxide.",
-        "The best anti-aging ingredients include retinoids, peptides, antioxidants, and hydrating agents like hyaluronic acid.",
-        "Everyone's skin is different! The perfect routine depends on your skin type, concerns, and goals. Let's start by identifying your skin type."
-      ];
-      
-      const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-      setChatHistory(prev => [...prev, { role: "assistant", content: randomResponse }]);
-      setIsLoading(false);
-    }, 1500);
+
+try {
+  const response = await fetch("http://localhost:5000/chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ message: userMessage }),
+  });
+
+  const data = await response.json();
+
+  setChatHistory(prev => [
+    ...prev,
+    { role: "assistant", content: data.reply || "Sorry, I couldn’t understand that." },
+  ]);
+} catch (error) {
+  setChatHistory(prev => [
+    ...prev,
+    { role: "assistant", content: "Oops! Something went wrong. Please try again later." },
+  ]);
+} finally {
+  setIsLoading(false);
+}
   };
 
   return (

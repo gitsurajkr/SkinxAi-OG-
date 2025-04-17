@@ -23,7 +23,7 @@ const Navbar = () => {
     { name: "Features", path: "/features" },
     { name: "Contact", path: "/contact" },
   ];
-  
+
   return (
     <motion.nav
       className="py-4 px-6 md:px-12 lg:px-24 sticky top-0 z-50 bg-background/80 backdrop-blur-md shadow-md border-b border-border"
@@ -87,34 +87,34 @@ const Navbar = () => {
 
             {/* Slide-in panel */}
             {/* Slide-in panel */}
-<motion.div
-  className="fixed top-0 right-0 w-4/5 sm:w-1/2 h-full bg-background z-50 px-6 pt-24 shadow-lg"
-  initial={{ x: "100%" }}
-  animate={{ x: 0 }}
-  exit={{ x: "100%" }}
-  transition={{ type: "spring", stiffness: 300, damping: 30 }}
->
-  <div className="flex flex-col gap-4">
-    {navItems.map((item) => (
-      <Link
-        key={item.name}
-        to={item.path}
-        className="flex items-center gap-3 text-lg text-foreground hover:text-skinx-teal border-b border-border pb-3"
-        onClick={toggleMenu}
-      >
-        <FaListUl className="text-skinx-teal" />
-        {item.name}
-      </Link>
-    ))}
-    <Button
-      className="bg-skinx-teal hover:bg-skinx-teal-dark text-white w-full mt-6"
-      onClick={toggleMenu}
-      asChild
-    >
-      <Link to="/scan">Start Scan</Link>
-    </Button>
-  </div>
-</motion.div>
+            <motion.div
+              className="fixed top-0 right-0 w-4/5 sm:w-1/2 h-full bg-background z-50 px-6 pt-24 shadow-lg"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <div className="flex flex-col gap-4">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    className="flex items-center gap-3 text-lg text-foreground hover:text-skinx-teal border-b border-border pb-3"
+                    onClick={toggleMenu}
+                  >
+                    <FaListUl className="text-skinx-teal" />
+                    {item.name}
+                  </Link>
+                ))}
+                <Button
+                  className="bg-skinx-teal hover:bg-skinx-teal-dark text-white w-full mt-6"
+                  onClick={toggleMenu}
+                  asChild
+                >
+                  <Link to="/scan">Start Scan</Link>
+                </Button>
+              </div>
+            </motion.div>
 
           </>
         )}
